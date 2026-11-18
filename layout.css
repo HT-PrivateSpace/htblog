@@ -1,0 +1,254 @@
+/* =========================================================
+   公共布局 — 潮流网红版
+   大胆排版 · 大号字距 · 胶囊导航 · 霓虹 Header
+   ========================================================= */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: "Inter", "SF Pro Display", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.75;
+  font-size: 15px;
+  min-height: 100vh;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  background-image: var(--bg-blob-1), var(--bg-blob-2), var(--bg-blob-3);
+  background-attachment: fixed;
+  animation: blob-drift 25s ease-in-out infinite alternate;
+}
+
+a { color: var(--accent); text-decoration: none; transition: var(--transition); }
+a:hover { color: var(--accent-hover); }
+
+img { max-width: 100%; display: block; }
+
+.container {
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 2;
+}
+
+/* ============ Header — 霓虹胶囊导航 ============ */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 14px 0;
+}
+
+.site-header .container {
+  background: var(--bg-header);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-xl);
+  padding: 0 6px 0 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  box-shadow:
+    0 4px 24px rgba(0,0,0,0.06),
+    0 1px 0 rgba(255,255,255,0.8) inset;
+}
+
+.site-logo {
+  font-size: 19px;
+  font-weight: 800;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.02em;
+}
+
+.site-logo .logo-icon {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.08));
+}
+
+.site-nav {
+  display: flex;
+  gap: 3px;
+  list-style: none;
+  align-items: center;
+  background: rgba(0,0,0,0.03);
+  border-radius: var(--radius-pill);
+  padding: 4px;
+}
+
+.site-nav a {
+  display: block;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.site-nav a:hover {
+  background: rgba(255,255,255,0.7);
+  color: var(--text-primary);
+}
+
+.site-nav a.active {
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 6px 18px var(--neon-color);
+}
+
+/* 主题切换 — 潮流圆点 */
+.theme-switcher {
+  display: flex;
+  gap: 3px;
+  padding: 4px;
+  background: rgba(0,0,0,0.04);
+  border-radius: var(--radius-pill);
+}
+
+.theme-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 15px;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-btn:hover { background: rgba(255,255,255,0.7); transform: translateY(-2px); }
+.theme-btn.active {
+  background: var(--accent-gradient);
+  box-shadow: 0 4px 14px var(--neon-color);
+  transform: scale(1.12);
+}
+
+/* 汉堡菜单 */
+.menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 10px;
+}
+
+.menu-toggle:hover { background: rgba(0,0,0,0.05); }
+
+/* ============ Main — 大间距 + 潮流标题 ============ */
+.site-main {
+  flex: 1;
+  padding: 40px 0 160px;
+  position: relative;
+  z-index: 2;
+}
+
+.page-title {
+  font-size: 36px;
+  font-weight: 900;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.page-subtitle {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin-bottom: 32px;
+  letter-spacing: 0.01em;
+}
+
+/* ============ Footer — 胶囊分隔 ============ */
+.site-footer {
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  margin: 0 24px 24px;
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255,255,255,0.7);
+  padding: 22px 0;
+  position: relative;
+  z-index: 2;
+  box-shadow: var(--shadow-soft);
+}
+
+.site-footer .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.footer-text { color: var(--text-muted); font-size: 13px; }
+.footer-links { display: flex; gap: 20px; font-size: 13px; }
+.footer-links a { color: var(--text-muted); transition: var(--transition); font-weight: 500; }
+.footer-links a:hover { color: var(--accent); }
+
+/* ============ 响应式 ============ */
+@media (max-width: 768px) {
+  .menu-toggle { display: block; }
+
+  .site-header { padding: 10px 0; }
+  .site-header .container {
+    height: 58px;
+    padding: 0 6px 0 16px;
+  }
+
+  .site-nav {
+    position: fixed;
+    top: 78px;
+    left: 16px;
+    right: 16px;
+    flex-direction: column;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.8);
+    border-radius: var(--radius-xl);
+    padding: 12px;
+    gap: 4px;
+    transform: translateY(-140%);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 99;
+    box-shadow: var(--shadow);
+  }
+  .site-nav.open { transform: translateY(0); }
+  .site-nav a { padding: 12px 18px; text-align: center; }
+
+  .site-logo { font-size: 17px; }
+  .container { padding: 0 16px; }
+  .page-title { font-size: 26px; }
+  .site-footer { margin: 0 12px 12px; border-radius: var(--radius-lg); }
+}
