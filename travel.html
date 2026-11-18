@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>四季旅行 · 小满即安</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+</head>
+<body data-page="travel">
+  <main class="site-main">
+    <div class="container">
+
+      <!-- 顶部 Hero -->
+      <section class="travel-hero">
+        <h1>🌏 四季旅行</h1>
+        <p>跟着四季的脚步，去看看这个世界。春夏秋冬，各有各的风景。</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <a href="travel-map.html" class="btn btn-ghost">🗺️ 查看足迹地图</a>
+          <a href="travel-gallery.html" class="btn btn-ghost">📸 季节相册墙</a>
+          <a href="travel-wish.html" class="btn btn-ghost">✨ 季节许愿墙</a>
+        </div>
+      </section>
+
+      <!-- 四季旅行日历 -->
+      <h2 class="section-title">
+        <span class="title-icon">📅</span>
+        四季旅行日历
+      </h2>
+      <div class="season-calendar" id="seasonCalendar"></div>
+
+      <!-- 季节主题路线 -->
+      <h2 class="section-title">
+        <span class="title-icon">🗺️</span>
+        季节主题路线
+      </h2>
+      <div class="topic-grid" id="topicGrid"></div>
+
+      <!-- 最新游记 -->
+      <h2 class="section-title">
+        <span class="title-icon">📖</span>
+        最新游记
+      </h2>
+      <div class="travel-preview" id="travelPreview"></div>
+
+    </div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/player.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    (function renderTravel() {
+      const SEASONS = [
+        { key: "spring", label: "春天", icon: "🌸", img: "assets/images/img_80301a110a430c79.jpg" },
+        { key: "summer", label: "夏天", icon: "🌊", img: "assets/images/img_f338edb1240ce332.jpg" },
+        { key: "autumn", label: "秋天", icon: "🍁", img: "assets/images/img_8801198b3d7b065b.jpg" },
+        { key: "winter", label: "冬天", icon: "❄️", img: "assets/images/img_8af03e0846d14df5.jpg" }
+      ];
+
+      // 四季日历卡片
+      document.getElementById("seasonCalendar").innerHTML = SEASONS.map(s => {
+        const posts = DB.getTravelPosts(s.key);
+        return `
+          <a class="season-card" href="travel.html?season=${s.key}">
+            <div class="season-bg" style="background-image:url('${s.img}')"></div>
+            <div class="season-tag">${posts.length} 篇游记</div>
+            <div class="season-overlay">
+              <div class="season-icon">${s.icon}</div>
+              <div class="season-label">${s.label}旅行</div>
+              <div class="season-count">${posts.length} 篇游记 · ${DB.getTravelTopics(s.key).length} 条路线</div>
+            </div>
+          </a>
+        `;
+      }).join("");
+
+      // 季节筛选（URL 参数）
+      const urlSeason = new URLSearchParams(location.search).get("season");
+      if (urlSeason) {
+        const seasonNames = { spring: "🌸 春天", summer: "🌊 夏天", autumn: "🍁 秋天", winter: "❄️ 冬天" };
+        const filteredPosts = DB.getTravelPosts(urlSeason);
+        document.getElementById("seasonCalendar").style.display = "none";
+        document.querySelector(".section-title").innerHTML = `<span class="title-icon">${SEASONS.find(s=>s.key===urlSeason)?.icon || ''}</span> ${seasonNames[urlSeason] || ''} 游记`;
+        document.getElementById("topicGrid").style.display = "none";
+        document.getElementById("travelPreview").innerHTML = filteredPosts.map(p => `
+          <div class="travel-preview-card" onclick="location.href='travel-detail.html?id=${p.id}'">
+            <div class="tp-cover" style="background-image:url('${p.cover}')"></div>
+            <div class="tp-info">
+              <h4>${App.escapeHtml(p.title)}</h4>
+              <p>${App.escapeHtml(p.excerpt)}</p>
+              <div class="tp-meta">${p.date} · ${p.views} 次阅读</div>
+            </div>
+          </div>
+        `).join("") || `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🗺️</div><p>这个季节还没有游记，敬请期待</p></div>`;
+        return;
+      }
+
+      // 主题路线
+      document.getElementById("topicGrid").innerHTML = DB.getTravelTopics().map(t => {
+        const posts = DB.getTravelPosts().filter(p => t.postIds.includes(p.id));
+        return `
+          <div class="topic-card" onclick="location.href='travel-topic.html?id=${t.id}'">
+            <div class="topic-bg" style="background-image:url('${t.cover}')"></div>
+            <div class="topic-overlay">
+              <h3>${App.escapeHtml(t.title)}</h3>
+              <p>${App.escapeHtml(t.desc)}</p>
+              <span class="topic-count">${posts.length} 篇游记 · ${DB.getTravelGallery(t.season).length} 张照片</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      // 最新游记
+      const recent = DB.getTravelPosts().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
+      document.getElementById("travelPreview").innerHTML = recent.map(p => {
+        const seasonIcon = { spring: "🌸", summer: "🌊", autumn: "🍁", winter: "❄️" }[p.season] || "";
+        return `
+          <div class="travel-preview-card" onclick="location.href='travel-detail.html?id=${p.id}'">
+            <div class="tp-cover" style="background-image:url('${p.cover}')"></div>
+            <div class="tp-info">
+              <h4>${seasonIcon} ${App.escapeHtml(p.title)}</h4>
+              <p>${App.escapeHtml(p.excerpt)}</p>
+              <div class="tp-meta">${p.date} · ${p.views} 次阅读</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    })();
+  </script>
+
+
+  <!-- 科技感装饰层 -->
+  <div class="tech-corner tech-tl"></div>
+  <div class="tech-corner tech-tr"></div>
+  <div class="tech-corner tech-bl"></div>
+  <div class="tech-corner tech-br"></div>
+  <div class="tech-data-stream"></div>
+</body>
+</html>

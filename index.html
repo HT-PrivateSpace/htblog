@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小满即安 · 旅行の治愈</title>
+  <meta name="description" content="一个以四季为主题的个人博客，记录春天、夏天、秋天、冬天里那些温柔的小事。">
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+</head>
+<body data-page="home">
+  <main class="site-main">
+    <div class="container">
+
+      <!-- Hero -->
+      <section class="hero-section">
+        <h1>小满即安</h1>
+        <p>旅行の治愈，四季里那些温柔的小事</p>
+        <a href="article.html?id=1" class="btn btn-lg">读最新一篇 →</a>
+      </section>
+
+      <!-- 文章列表 -->
+      <h2 class="section-title">
+        <span class="title-icon" role="img" aria-label="书">📖</span>
+        最新文章
+      </h2>
+      <div class="article-list" id="articleList">
+        <div class="skeleton" style="height:160px"></div>
+        <div class="skeleton" style="height:160px"></div>
+      </div>
+
+      <!-- 精选相册 -->
+      <h2 class="section-title">
+        <span class="title-icon" role="img" aria-label="画">🖼️</span>
+        精选相册
+      </h2>
+      <div class="album-grid" id="albumGrid"></div>
+
+      <!-- 四季旅行预览 -->
+      <h2 class="section-title">
+        <span class="title-icon" role="img" aria-label="地球">🌏</span>
+        四季旅行
+      </h2>
+      <div class="travel-preview" id="travelPreview"></div>
+      <div style="text-align:center;margin-top:8px">
+        <a href="travel.html" class="btn btn-ghost">查看全部游记 →</a>
+      </div>
+
+      <!-- 音乐播放器入口提示 -->
+      <h2 class="section-title">
+        <span class="title-icon" role="img" aria-label="音符">🎵</span>
+        此刻在听
+      </h2>
+      <div class="card">
+        <div class="card-body" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div style="font-size:36px" role="img" aria-label="耳机">🎧</div>
+          <div style="flex:1;min-width:200px">
+            <h3 style="font-size:16px;margin-bottom:4px">底部播放器正在为你挑选四季音乐</h3>
+            <p class="text-muted text-sm">点击右下角的列表图标，选择一首契合当下心境的曲子，让它陪你读完这一页。</p>
+          </div>
+          <button class="btn" onclick="document.getElementById('playlistToggle').click()">打开播放列表</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/player.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    // 首页渲染
+    (function renderHome() {
+      // 文章列表（最近 4 篇，按日期降序）
+      const articles = DB.getArticles().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
+      document.getElementById("articleList").innerHTML = articles.map(a => `
+        <article class="article-item" onclick="location.href='article.html?id=${a.id}'">
+          <!-- REQ-010: 非首屏图片懒加载 -->
+          <div class="article-cover" style="background-image:url('${a.cover}')"></div>
+          <div class="article-content">
+            <div>
+              <h3 class="article-title">${App.escapeHtml(a.title)}</h3>
+              <p class="article-excerpt">${App.escapeHtml(a.excerpt)}</p>
+            </div>
+            <div class="article-meta">
+              <span class="meta-item">📅 ${a.date}</span>
+              <span class="meta-item">📁 ${App.escapeHtml(a.category)}</span>
+              <span class="meta-item">👁 ${App.formatViews(a.views)}</span>
+              ${a.tags.map(t => `<span class="tag">${App.escapeHtml(t)}</span>`).join("")}
+            </div>
+          </div>
+        </article>
+      `).join("");
+
+      // 精选相册
+      const albums = DB.getAlbums();
+      document.getElementById("albumGrid").innerHTML = albums.map(a => `
+        <div class="album-card" onclick="location.href='album.html?id=${a.id}'">
+          <div class="album-cover" style="background-image:url('${a.cover}')"></div>
+          <div class="album-info">
+            <h4>${App.escapeHtml(a.title)}</h4>
+            <span>${a.photos.length} 张照片 · ${a.season}</span>
+          </div>
+        </div>
+      `).join("");
+
+      // 四季旅行预览（最新 4 篇游记）
+      const travelPosts = DB.getTravelPosts().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
+      const seasonIcon = { spring: "🌸", summer: "🌊", autumn: "🍁", winter: "❄️" };
+      document.getElementById("travelPreview").innerHTML = travelPosts.map(p => `
+        <div class="travel-preview-card" onclick="location.href='travel-detail.html?id=${p.id}'">
+          <div class="tp-cover" style="background-image:url('${p.cover}')"></div>
+          <div class="tp-info">
+            <h4>${seasonIcon[p.season]} ${App.escapeHtml(p.title)}</h4>
+            <p>${App.escapeHtml(p.excerpt)}</p>
+            <div class="tp-meta">${p.date} · ${p.views} 次阅读</div>
+          </div>
+        </div>
+      `).join("");
+    })();
+  </script>
+
+
+  <!-- 科技感装饰层 -->
+  <div class="tech-corner tech-tl" aria-hidden="true"></div>
+  <div class="tech-corner tech-tr" aria-hidden="true"></div>
+  <div class="tech-corner tech-bl" aria-hidden="true"></div>
+  <div class="tech-corner tech-br" aria-hidden="true"></div>
+  <div class="tech-data-stream" aria-hidden="true"></div>
+</body>
+</html>

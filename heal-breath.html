@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>慢呼吸练习 · 治愈角落</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+  <style>
+    .breath-wrap {
+      min-height: 60vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+      padding: 40px 20px;
+    }
+    .breath-instruction { font-size: 15px; color: var(--text-secondary); margin-bottom: 32px; }
+    .breath-circle {
+      width: 220px; height: 220px; border-radius: 50%;
+      background: var(--accent-gradient);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 22px; font-weight: 700;
+      box-shadow: 0 20px 60px var(--neon-color), inset 0 0 40px rgba(255,255,255,0.2);
+      transition: transform 4s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 32px;
+    }
+    .breath-circle.inhale { transform: scale(1.35); }
+    .breath-circle.hold { transform: scale(1.35); }
+    .breath-circle.exhale { transform: scale(0.85); }
+    .breath-controls { display: flex; gap: 12px; margin-top: 20px; }
+    .breath-session { font-size: 13px; color: var(--text-muted); margin-top: 16px; }
+    .season-breath { font-size: 18px; margin-bottom: 12px; }
+  </style>
+</head>
+<body data-page="heal-breath">
+  <main class="site-main">
+    <div class="container">
+      <h1 class="page-title">🫁 慢呼吸</h1>
+      <p class="page-subtitle">吸气 4 秒 · 停留 2 秒 · 呼气 6 秒。跟着四季，慢慢呼吸。</p>
+
+      <div class="breath-wrap">
+        <div class="season-breath" id="seasonBreath">🌸 春 · 叶子在生长</div>
+        <div class="breath-instruction">点击开始，慢慢跟着呼吸</div>
+        <div class="breath-circle" id="breathCircle">准备好</div>
+        <div class="breath-controls">
+          <button class="btn" onclick="startBreath()" id="startBtn">▶ 开始</button>
+          <button class="btn btn-ghost" onclick="stopBreath()" id="stopBtn" style="display:none">⏸ 暂停</button>
+        </div>
+        <div class="breath-session">已完成 <span id="sessionCount">0</span> 轮呼吸</div>
+      </div>
+
+      <div class="flex" style="gap:12px;justify-content:center;margin-top:24px">
+        <a href="heal.html" class="btn btn-ghost">← 回到治愈角落</a>
+      </div>
+    </div>
+  </main>
+
+  <div class="tech-corner tech-tl"></div>
+  <div class="tech-corner tech-tr"></div>
+  <div class="tech-corner tech-bl"></div>
+  <div class="tech-corner tech-br"></div>
+  <div class="tech-data-stream"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script>
+    const seasonBreaths = {
+      spring: "🌸 春 · 叶子在生长",
+      summer: "🌊 夏 · 海浪在起伏",
+      autumn: "🍂 秋 · 叶子轻轻落下",
+      winter: "❄️ 冬 · 雪花慢慢飘落"
+    };
+    document.getElementById('seasonBreath').textContent = seasonBreaths[DB.getSeason()];
+
+    let timer, phase = 0, count = 0;
+    const circle = document.getElementById('breathCircle');
+    const phases = [
+      { name: '吸气', duration: 4000, cls: 'inhale' },
+      { name: '停留', duration: 2000, cls: 'hold' },
+      { name: '呼气', duration: 6000, cls: 'exhale' },
+    ];
+
+    function startBreath() {
+      document.getElementById('startBtn').style.display = 'none';
+      document.getElementById('stopBtn').style.display = 'inline-flex';
+      runPhase();
+    }
+    function stopBreath() {
+      clearTimeout(timer);
+      document.getElementById('startBtn').style.display = 'inline-flex';
+      document.getElementById('stopBtn').style.display = 'none';
+      circle.className = 'breath-circle';
+      circle.textContent = '已暂停';
+    }
+    function runPhase() {
+      const p = phases[phase % 3];
+      circle.className = 'breath-circle ' + p.cls;
+      circle.textContent = p.name + ' ' + (p.duration/1000) + 's';
+      phase++;
+      if (phase % 3 === 0) {
+        count++;
+        document.getElementById('sessionCount').textContent = count;
+      }
+      timer = setTimeout(runPhase, p.duration);
+    }
+  </script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

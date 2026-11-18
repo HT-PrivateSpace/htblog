@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>四季足迹地图 · 四季旅行</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+</head>
+<body data-page="travel">
+  <main class="site-main">
+    <div class="container">
+
+      <h1 class="page-title"><span>🗺️</span> 四季足迹地图</h1>
+      <p class="page-subtitle">每一个标记都是一段故事。点击查看详情或跳转对应游记。</p>
+
+      <!-- 地图区域 -->
+      <div class="travel-map-wrap">
+        <div class="travel-map" id="travelMap">
+          <div class="map-continents"></div>
+          <!-- 标记点由 JS 动态生成 -->
+        </div>
+        <div class="map-legend">
+          <div class="map-legend-item"><span class="map-legend-dot" style="background:#66bb6a"></span>春天</div>
+          <div class="map-legend-item"><span class="map-legend-dot" style="background:#42a5f5"></span>夏天</div>
+          <div class="map-legend-item"><span class="map-legend-dot" style="background:#ff9800"></span>秋天</div>
+          <div class="map-legend-item"><span class="map-legend-dot" style="background:#eceff1;border:1px solid #90a4ae"></span>冬天</div>
+        </div>
+      </div>
+
+      <!-- 地点列表 -->
+      <h2 class="section-title"><span class="title-icon">📍</span> 所有足迹（<span id="placeCount">0</span>）</h2>
+      <div id="placeList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px"></div>
+
+    </div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/player.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    (function renderMap() {
+      // 使用 URL 参数的 place 高亮
+      const highlightPlace = App.getParam("place");
+      const places = DB.getTravelPlaces();
+      const mapEl = document.getElementById("travelMap");
+
+      // 将经纬度映射到地图相对位置（0-100%）
+      // lng 范围 104-140（覆盖东亚），lat 范围 24-36
+      // 地图 viewBox 1000x500，位置用百分比
+      function latLngToPercent(lat, lng) {
+        const minLng = 100, maxLng = 145;
+        const minLat = 20, maxLat = 40;
+        const x = ((lng - minLng) / (maxLng - minLng)) * 100;
+        const y = ((maxLat - lat) / (maxLat - minLat)) * 100;
+        return { x, y };
+      }
+
+      const SEASON_ICONS = { spring: "🌸", summer: "🌊", autumn: "🍁", winter: "❄️" };
+      const SEASON_LABELS = { spring: "春天", summer: "夏天", autumn: "秋天", winter: "冬天" };
+
+      // 渲染地图标记
+      const markersHTML = places.map(p => {
+        const { x, y } = latLngToPercent(p.lat, p.lng);
+        const highlighted = highlightPlace && parseInt(highlightPlace) === p.id;
+        return `
+          <div class="map-marker ${p.season}" 
+               style="left:${x}%;top:${y}%" 
+               title="${p.name} · ${SEASON_LABELS[p.season]}"
+               data-place-id="${p.id}">
+            <div class="marker-pulse" style="background:${getComputedStyleFor(p.season)}"></div>
+            ${SEASON_ICONS[p.season]}
+          </div>
+        `;
+      }).join("");
+
+      function getComputedStyleFor(season) {
+        return { spring: "#66bb6a", summer: "#42a5f5", autumn: "#ff9800", winter: "#eceff1" }[season] || "#666";
+      }
+
+      mapEl.insertAdjacentHTML("beforeend", markersHTML);
+
+      // 点击标记跳转
+      mapEl.querySelectorAll(".map-marker").forEach(marker => {
+        marker.addEventListener("click", () => {
+          const pid = marker.dataset.placeId;
+          const place = DB.getTravelPlace(pid);
+          if (place && place.postIds && place.postIds.length) {
+            location.href = `travel-detail.html?id=${place.postIds[0]}`;
+          }
+        });
+      });
+
+      // 渲染地点列表
+      document.getElementById("placeCount").textContent = places.length;
+      document.getElementById("placeList").innerHTML = places.map(p => {
+        const post = DB.getTravelPost(p.postIds[0]);
+        return `
+          <div class="card" style="transition:var(--transition);cursor:pointer" onclick="location.href='travel-detail.html?id=${p.postIds[0]}'">
+            <div class="card-body">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span class="map-marker ${p.season}" style="position:static;transform:none;width:22px;height:22px;font-size:11px">${SEASON_ICONS[p.season]}</span>
+                <strong style="font-size:15px;color:var(--text-primary)">${App.escapeHtml(p.name)}</strong>
+                <span class="status-badge status-approved" style="margin-left:auto">${SEASON_LABELS[p.season]}</span>
+              </div>
+              <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">${App.escapeHtml(p.desc)}</p>
+              ${post ? `<p class="text-muted text-sm">📖 关联游记：${App.escapeHtml(post.title)}</p>` : ""}
+            </div>
+          </div>
+        `;
+      }).join("");
+    })();
+  </script>
+
+
+  <!-- 科技感装饰层 -->
+  <div class="tech-corner tech-tl"></div>
+  <div class="tech-corner tech-tr"></div>
+  <div class="tech-corner tech-bl"></div>
+  <div class="tech-corner tech-br"></div>
+  <div class="tech-data-stream"></div>
+</body>
+</html>

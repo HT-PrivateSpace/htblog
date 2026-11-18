@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>安静角落 · 治愈角落</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+  <style>
+    .whisper-bg {
+      position: fixed; inset: 0; z-index: 0;
+      background: linear-gradient(180deg,
+        var(--accent-soft) 0%,
+        rgba(255,255,255,0.95) 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .whisper-center {
+      text-align: center; max-width: 500px; padding: 40px 24px;
+      animation: fade-in 2s ease;
+    }
+    .whisper-emoji {
+      font-size: 120px; margin-bottom: 24px;
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,0.08));
+      animation: gentle-float 5s ease-in-out infinite;
+    }
+    @keyframes gentle-float {
+      0%, 100% { transform: translateY(0) rotate(-2deg); }
+      50% { transform: translateY(-10px) rotate(2deg); }
+    }
+    .whisper-quote {
+      font-size: 20px; font-weight: 500; line-height: 1.7;
+      color: var(--text-primary); font-style: italic; margin-bottom: 16px;
+    }
+    .whisper-season {
+      font-size: 13px; color: var(--text-muted); margin-bottom: 28px;
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .whisper-timer {
+      font-size: 48px; font-weight: 800; color: var(--accent);
+      margin-bottom: 16px; font-variant-numeric: tabular-nums;
+      background: var(--accent-gradient); -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .whisper-nav {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      z-index: 10; background: rgba(255,255,255,0.8); backdrop-filter: blur(16px);
+      padding: 12px 20px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.7);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    }
+    .whisper-nav a { font-size: 13px; font-weight: 500; }
+  </style>
+</head>
+<body data-page="heal-whisper">
+  <div class="whisper-bg">
+    <div class="whisper-center">
+      <div class="whisper-emoji" id="whisperEmoji">🌙</div>
+      <div class="whisper-season" id="whisperSeason">安静角落</div>
+      <p class="whisper-quote" id="whisperQuote">万物都在慢慢醒来，你也可以。</p>
+      <div class="whisper-timer" id="whisperTimer">00:00</div>
+      <p style="font-size:13px;color:var(--text-muted)">闭上眼睛，深呼吸。<br>什么都不用想，就好。</p>
+    </div>
+  </div>
+
+  <div class="whisper-nav">
+    <a href="heal.html" class="btn btn-ghost btn-sm">← 回到治愈角落</a>
+  </div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script>
+    // 随机选一句
+    const quotes = DB.getHealQuotes();
+    const quote = quotes[Math.floor(Math.random() * quotes.length)];
+    document.getElementById('whisperQuote').textContent = quote;
+
+    const seasonMap = { spring: { e: '🌸', s: '安静角落 · 春' }, summer: { e: '🌊', s: '安静角落 · 夏' }, autumn: { e: '🍂', s: '安静角落 · 秋' }, winter: { e: '🌙', s: '安静角落 · 冬' } };
+    const s = seasonMap[DB.getSeason()];
+    document.getElementById('whisperEmoji').textContent = s.e;
+    document.getElementById('whisperSeason').textContent = s.s;
+
+    // 计时器
+    let seconds = 0;
+    setInterval(() => {
+      seconds++;
+      const m = String(Math.floor(seconds/60)).padStart(2,'0');
+      const s = String(seconds%60).padStart(2,'0');
+      document.getElementById('whisperTimer').textContent = `${m}:${s}`;
+    }, 1000);
+  </script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

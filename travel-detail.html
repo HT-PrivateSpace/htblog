@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>游记详情 · 四季旅行</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+</head>
+<body data-page="travel">
+  <main class="site-main">
+    <div class="container" id="detailContainer"></div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/player.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    (function renderDetail() {
+      const id = App.getParam("id");
+      const post = DB.getTravelPost(id);
+      const container = document.getElementById("detailContainer");
+
+      if (!post) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <h3>游记不存在</h3>
+            <p>可能已被删除或 ID 不正确</p>
+            <a href="travel.html" class="btn" style="margin-top:16px">← 返回旅游板块</a>
+          </div>
+        `;
+        return;
+      }
+
+      const seasonLabels = { spring: "🌸 春天", summer: "🌊 夏天", autumn: "🍁 秋天", winter: "❄️ 冬天" };
+      const postPlaces = (post.placeIds || []).map(pid => DB.getTravelPlace(pid)).filter(Boolean);
+      const relatedPosts = DB.getTravelPosts(post.season).filter(p => p.id !== post.id).slice(0, 3);
+
+      // 相关地点链接
+      const placeLinks = postPlaces.map(p => `<a href="travel-map.html?place=${p.id}" style="color:var(--accent)">${App.escapeHtml(p.name)}</a>`).join(" · ");
+
+      container.innerHTML = `
+        <!-- 面包屑 -->
+        <div style="margin-bottom:16px;font-size:13px;color:var(--text-muted)">
+          <a href="travel.html">四季旅行</a> &raquo;
+          <a href="travel.html?season=${post.season}">${seasonLabels[post.season]}</a> &raquo;
+          <span style="color:var(--text-primary)">${App.escapeHtml(post.title)}</span>
+        </div>
+
+        <!-- 最佳旅行时间卡片 -->
+        <div class="best-time-card">
+          <div class="best-time-item">
+            <span class="bt-label">📅 最佳月份</span>
+            <span class="bt-value">${App.escapeHtml(post.bestTime.months)}</span>
+          </div>
+          <div class="best-time-item">
+            <span class="bt-label">☀️ 天气特点</span>
+            <span class="bt-value">${App.escapeHtml(post.bestTime.weather)}</span>
+          </div>
+          <div class="best-time-item">
+            <span class="bt-label">👕 推荐穿搭</span>
+            <span class="bt-value">${App.escapeHtml(post.bestTime.outfit)}</span>
+          </div>
+          <div class="best-time-item">
+            <span class="bt-label">👥 适合人群</span>
+            <span class="bt-value">${post.bestTime.crowd === "很多" ? "📢 热门景点" : post.bestTime.crowd === "较多" ? "👥 会有不少游客" : post.bestTime.crowd === "中等" ? "🙂 人流量适中" : "🤫 较为清静"}</span>
+          </div>
+          <div class="best-time-item full">
+            <span class="bt-label">⚠️ 避坑提示</span>
+            <span class="bt-value">${App.escapeHtml(post.bestTime.tips)}</span>
+          </div>
+        </div>
+
+        <!-- 游记正文 -->
+        <article class="travel-detail">
+          <div class="travel-detail-head">
+            <h1>${App.escapeHtml(post.title)}</h1>
+            <div class="detail-meta">
+              <span class="season-tag ${post.season}">${seasonLabels[post.season]}</span>
+              <span>📅 ${post.date}</span>
+              <span>👁 ${App.formatViews(post.views)}</span>
+              ${postPlaces.length ? `<span>📍 ${placeLinks}</span>` : ""}
+            </div>
+          </div>
+
+          <div class="detail-cover" style="background-image:url('${post.cover}')"></div>
+
+          <div class="detail-body">${post.content}</div>
+        </article>
+
+        <!-- 旅行清单与预算模块 -->
+        <div class="travel-checklist">
+          <h3>🎒 旅行清单与预算</h3>
+          <div class="checklist-grid">
+            <div class="checklist-section">
+              <h4>🧳 行李清单</h4>
+              <ul>${post.checklist.luggage.map(x => `<li>${App.escapeHtml(x)}</li>`).join("")}</ul>
+            </div>
+            <div class="checklist-section">
+              <h4>🚗 交通方式</h4>
+              <ul>${post.checklist.transport.map(x => `<li>${App.escapeHtml(x)}</li>`).join("")}</ul>
+            </div>
+            <div class="checklist-section">
+              <h4>🏨 住宿推荐</h4>
+              <ul>${post.checklist.stay.map(x => `<li>${App.escapeHtml(x)}</li>`).join("")}</ul>
+            </div>
+            <div class="checklist-section">
+              <h4>💰 预算参考</h4>
+              <div class="budget-box">
+                <div class="budget-main">
+                  <div>
+                    <div class="budget-num">¥${post.checklist.budget.person}<span>/人</span></div>
+                    <div class="text-sm text-muted">约 ${post.checklist.budget.days} 天</div>
+                  </div>
+                </div>
+                <div class="budget-items">
+                  ${post.checklist.budget.items.map(x => `<span class="budget-chip">${App.escapeHtml(x)}</span>`).join("")}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="recommend-avoid">
+            <div class="ra-box ra-good">
+              <h5>✅ 推荐</h5>
+              <ul>${post.checklist.recommend.map(x => `<li>${App.escapeHtml(x)}</li>`).join("")}</ul>
+            </div>
+            <div class="ra-box ra-bad">
+              <h5>❌ 不推荐</h5>
+              <ul>${post.checklist.avoid.map(x => `<li>${App.escapeHtml(x)}</li>`).join("")}</ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 相关游记推荐 -->
+        ${relatedPosts.length ? `
+          <h2 class="section-title"><span class="title-icon">🔗</span> 同季节相关游记</h2>
+          <div class="related-posts">
+            ${relatedPosts.map(r => `
+              <div class="related-post-card" onclick="location.href='travel-detail.html?id=${r.id}'">
+                <div class="related-post-cover" style="background-image:url('${r.cover}')"></div>
+                <div class="related-post-info">
+                  <h4>${App.escapeHtml(r.title)}</h4>
+                  <div class="related-post-meta">${r.date} · ${r.views} 次阅读</div>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        ` : ""}
+      `;
+
+      // 更新页面标题
+      document.title = `${post.title} · 四季旅行`;
+    })();
+  </script>
+
+
+  <!-- 科技感装饰层 -->
+  <div class="tech-corner tech-tl"></div>
+  <div class="tech-corner tech-tr"></div>
+  <div class="tech-corner tech-bl"></div>
+  <div class="tech-corner tech-br"></div>
+  <div class="tech-data-stream"></div>
+</body>
+</html>

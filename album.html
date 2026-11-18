@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>时光相册 · 小满即安</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+</head>
+<body data-page="album">
+  <main class="site-main">
+    <div class="container">
+
+      <h1 class="page-title">
+        <span>🖼️</span> 时光相册
+      </h1>
+      <p class="page-subtitle">按季节归档的照片，记录四季里那些值得被定格的瞬间</p>
+
+      <!-- 季节过滤 -->
+      <div class="album-filter" id="albumFilter">
+        <button class="filter-btn active" data-season="all">全部</button>
+        <button class="filter-btn" data-season="春">🌸 春</button>
+        <button class="filter-btn" data-season="夏">🌊 夏</button>
+        <button class="filter-btn" data-season="秋">🍂 秋</button>
+        <button class="filter-btn" data-season="冬">❄ 冬</button>
+      </div>
+
+      <!-- 时间线相册 -->
+      <div class="timeline" id="timeline"></div>
+
+    </div>
+  </main>
+
+  <!-- 大图预览模态框 -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lightboxClose">×</button>
+    <button class="lightbox-nav lightbox-prev" id="lightboxPrev">‹</button>
+    <div class="lightbox-cover" id="lightboxImage"></div>
+    <button class="lightbox-nav lightbox-next" id="lightboxNext">›</button>
+    <div class="lightbox-info" id="lightboxInfo"></div>
+  </div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/player.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    (function renderAlbum() {
+      const albums = DB.getAlbums();
+      let currentFilter = "all";
+      let lightboxPhotos = [];
+      let lightboxIndex = 0;
+
+      function render() {
+        const filtered = currentFilter === "all"
+          ? albums
+          : albums.filter(a => a.season.includes(currentFilter));
+
+        if (!filtered.length) {
+          document.getElementById("timeline").innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">📷</div>
+              <h3>暂无照片</h3>
+              <p>这个季节还没有相册</p>
+            </div>
+          `;
+          return;
+        }
+
+        // 按季节分组并按时间倒序
+        const sorted = [...filtered].sort((a, b) => b.season.localeCompare(a.season));
+
+        document.getElementById("timeline").innerHTML = sorted.map(album => `
+          <div class="timeline-group">
+            <h3>${App.escapeHtml(album.title)}</h3>
+            <div class="timeline-grid">
+              ${album.photos.map(p => `
+                <div class="timeline-photo" data-album="${album.id}" data-photo="${p.id}">
+                  <div class="photo-cover" style="background-image:url('${p.cover}')"></div>
+                  <div class="photo-overlay">
+                    <strong>${App.escapeHtml(p.title)}</strong>
+                    <span>${p.date}</span>
+                  </div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        `).join("");
+
+        // 懒加载：用 IntersectionObserver 给未进入视口的图片占位
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(e => {
+            if (e.isIntersecting) {
+              e.target.style.opacity = "1";
+              observer.unobserve(e.target);
+            }
+          });
+        }, { rootMargin: "100px" });
+        document.querySelectorAll(".timeline-photo").forEach(el => {
+          el.style.opacity = "0.3";
+          el.style.transition = "opacity 0.6s ease";
+          observer.observe(el);
+        });
+      }
+
+      // 过滤按钮
+      document.getElementById("albumFilter").addEventListener("click", (e) => {
+        const btn = e.target.closest(".filter-btn");
+        if (!btn) return;
+        document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentFilter = btn.dataset.season;
+        render();
+      });
+
+      // 点击照片打开大图
+      document.getElementById("timeline").addEventListener("click", (e) => {
+        const photo = e.target.closest(".timeline-photo");
+        if (!photo) return;
+        const albumId = parseInt(photo.dataset.album);
+        const photoId = parseInt(photo.dataset.photo);
+        const album = DB.getAlbum(albumId);
+        if (!album) return;
+        lightboxPhotos = album.photos;
+        lightboxIndex = album.photos.findIndex(p => p.id === photoId);
+        openLightbox();
+      });
+
+      function openLightbox() {
+        const p = lightboxPhotos[lightboxIndex];
+        if (!p) return;
+        document.getElementById("lightboxImage").style.backgroundImage = `url('${p.cover}')`;
+        document.getElementById("lightboxInfo").innerHTML = `
+          <h4>${App.escapeHtml(p.title)}</h4>
+          <p>${p.date} · ${App.escapeHtml(p.desc || "")}</p>
+        `;
+        document.getElementById("lightbox").classList.add("open");
+      }
+
+      function closeLightbox() {
+        document.getElementById("lightbox").classList.remove("open");
+      }
+
+      function navLightbox(dir) {
+        lightboxIndex = (lightboxIndex + dir + lightboxPhotos.length) % lightboxPhotos.length;
+        openLightbox();
+      }
+
+      document.getElementById("lightboxClose").addEventListener("click", closeLightbox);
+      document.getElementById("lightboxPrev").addEventListener("click", () => navLightbox(-1));
+      document.getElementById("lightboxNext").addEventListener("click", () => navLightbox(1));
+      document.getElementById("lightbox").addEventListener("click", (e) => {
+        if (e.target.id === "lightbox") closeLightbox();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (!document.getElementById("lightbox").classList.contains("open")) return;
+        if (e.key === "Escape") closeLightbox();
+        if (e.key === "ArrowLeft") navLightbox(-1);
+        if (e.key === "ArrowRight") navLightbox(1);
+      });
+
+      render();
+    })();
+  </script>
+
+
+  <!-- 科技感装饰层 -->
+  <div class="tech-corner tech-tl"></div>
+  <div class="tech-corner tech-tr"></div>
+  <div class="tech-corner tech-bl"></div>
+  <div class="tech-corner tech-br"></div>
+  <div class="tech-data-stream"></div>
+</body>
+</html>

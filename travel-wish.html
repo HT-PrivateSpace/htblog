@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>季节许愿墙 · 四季旅行</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+</head>
+<body data-page="travel">
+  <main class="site-main">
+    <div class="container">
+
+      <h1 class="page-title"><span>✨</span> 季节许愿墙</h1>
+      <p class="page-subtitle">下个季节想去哪？推荐喜欢的旅行地点？分享旅行体验？在这里留下你的心愿吧。</p>
+
+      <div class="wish-layout">
+
+        <!-- 许愿表单 -->
+        <div class="wish-form-card">
+          <h3>✍ 写下你的愿望</h3>
+          <form id="wishForm" novalidate>
+            <div class="form-group">
+              <label class="form-label">昵称 <span class="required">*</span></label>
+              <input type="text" class="form-input" id="wishName" maxlength="20" placeholder="怎么称呼你？">
+              <div class="form-error" id="errName">请填写昵称</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">想去的季节 <span class="required">*</span></label>
+              <select class="form-select" id="wishSeason">
+                <option value="spring">🌸 春天</option>
+                <option value="summer">🌊 夏天</option>
+                <option value="autumn">🍁 秋天</option>
+                <option value="winter">❄️ 冬天</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">愿望内容 <span class="required">*</span></label>
+              <textarea class="form-textarea" id="wishContent" maxlength="300" placeholder="下个季节想去哪？或者推荐个好地方？"></textarea>
+              <div class="form-error" id="errContent">请填写愿望内容</div>
+            </div>
+            <button type="submit" class="btn btn-lg" style="width:100%">💫 许下愿望</button>
+          </form>
+        </div>
+
+        <!-- 许愿列表 -->
+        <div>
+          <div class="album-filter" id="wishFilter" style="margin-bottom:16px">
+            <button class="filter-btn active" data-season="all">全部</button>
+            <button class="filter-btn" data-season="spring">🌸 春天</button>
+            <button class="filter-btn" data-season="summer">🌊 夏天</button>
+            <button class="filter-btn" data-season="autumn">🍁 秋天</button>
+            <button class="filter-btn" data-season="winter">❄️ 冬天</button>
+          </div>
+          <div class="wish-list" id="wishList"></div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/player.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    (function renderWishes() {
+      let currentSeason = "all";
+      const SEASON_TAGS = { spring: { class: "season-tag spring", label: "🌸 春天" }, summer: { class: "season-tag summer", label: "🌊 夏天" }, autumn: { class: "season-tag autumn", label: "🍁 秋天" }, winter: { class: "season-tag winter", label: "❄️ 冬天" } };
+
+      function render() {
+        const wishes = currentSeason === "all" ? DB.getTravelWishes() : DB.getTravelWishes(currentSeason);
+        document.getElementById("wishList").innerHTML = wishes.map(w => {
+          const initial = (w.name || "?").charAt(0).toUpperCase();
+          return `
+            <div class="wish-item">
+              <div class="wish-header">
+                <span class="wish-name">${initial}. ${App.escapeHtml(w.name)}</span>
+                <span class="wish-season ${SEASON_TAGS[w.season].class}">${SEASON_TAGS[w.season].label}</span>
+              </div>
+              <div class="wish-content">${App.escapeHtml(w.content)}</div>
+              <div class="wish-time">${w.date}</div>
+            </div>
+          `;
+        }).join("") || `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">💫</div><p>还没有人许愿，成为第一个吧</p></div>`;
+      }
+
+      document.getElementById("wishFilter").addEventListener("click", (e) => {
+        const btn = e.target.closest(".filter-btn");
+        if (!btn) return;
+        document.querySelectorAll("#wishFilter .filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentSeason = btn.dataset.season;
+        render();
+      });
+
+      document.getElementById("wishForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const name = document.getElementById("wishName").value.trim();
+        const season = document.getElementById("wishSeason").value;
+        const content = document.getElementById("wishContent").value.trim();
+
+        document.getElementById("errName").classList.toggle("show", !name);
+        document.getElementById("errContent").classList.toggle("show", !content);
+        if (!name || !content) return;
+
+        DB.addTravelWish({ name, season, content: content.replace(/</g, "&lt;").replace(/>/g, "&gt;") });
+
+        const form = document.getElementById("wishForm");
+        form.insertAdjacentHTML("beforebegin", `<div class="alert alert-success">💫 愿望已许下，愿你心想事成！</div>`);
+        form.reset();
+        setTimeout(() => document.querySelector(".alert-success")?.remove(), 4000);
+        render();
+      });
+
+      render();
+    })();
+  </script>
+
+
+  <!-- 科技感装饰层 -->
+  <div class="tech-corner tech-tl"></div>
+  <div class="tech-corner tech-tr"></div>
+  <div class="tech-corner tech-bl"></div>
+  <div class="tech-corner tech-br"></div>
+  <div class="tech-data-stream"></div>
+</body>
+</html>
