@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>主题路线 · 四季旅行</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+</head>
+<body data-page="travel">
+  <main class="site-main">
+    <div class="container" id="topicContainer"></div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/player.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    (function renderTopic() {
+      const container = document.getElementById("topicContainer");
+      const id = App.getParam("id");
+      let topic = id ? DB.getTravelTopic(id) : null;
+
+      const seasonLabels = { spring: "🌸 春", summer: "🌊 夏", autumn: "🍁 秋", winter: "❄️ 冬" };
+
+      if (!topic) {
+        // 没有指定 ID，渲染全部专题列表
+        const topics = DB.getTravelTopics();
+        container.innerHTML = `
+          <h1 class="page-title"><span>🗺️</span> 季节主题路线</h1>
+          <p class="page-subtitle">精选每个季节最值得走的路线，跟着走就对了</p>
+          <div class="topic-grid">
+            ${topics.map(t => {
+              const posts = DB.getTravelPosts().filter(p => t.postIds.includes(p.id));
+              return `
+                <div class="topic-card" onclick="location.href='travel-topic.html?id=${t.id}'">
+                  <div class="topic-bg" style="background-image:url('${t.cover}')"></div>
+                  <div class="topic-overlay">
+                    <h3>${App.escapeHtml(t.title)}</h3>
+                    <p>${App.escapeHtml(t.desc)}</p>
+                    <span class="topic-count">${seasonLabels[t.season]} · ${posts.length} 篇游记</span>
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `;
+        return;
+      }
+
+      // 渲染单个专题详情
+      const posts = DB.getTravelPosts().filter(p => topic.postIds.includes(p.id)).sort((a, b) => b.date.localeCompare(a.date));
+
+      container.innerHTML = `
+        <div class="topic-header">
+          <div class="topic-header-bg" style="background-image:url('${topic.cover}')"></div>
+          <div class="topic-header-overlay">
+            <div>
+              <h1>${App.escapeHtml(topic.title)}</h1>
+              <p>${App.escapeHtml(topic.desc)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:20px;font-size:13px;color:var(--text-muted)">
+          <a href="travel.html">← 返回四季旅行</a>
+        </div>
+
+        <h2 class="section-title"><span class="title-icon">📋</span> 包含游记（${posts.length}）</h2>
+        <div class="travel-preview">
+          ${posts.map(p => `
+            <div class="travel-preview-card" onclick="location.href='travel-detail.html?id=${p.id}'">
+              <div class="tp-cover" style="background-image:url('${p.cover}')"></div>
+              <div class="tp-info">
+                <h4>${App.escapeHtml(p.title)}</h4>
+                <p>${App.escapeHtml(p.excerpt)}</p>
+                <div class="tp-meta">${p.date} · ${p.views} 次阅读</div>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+
+      document.title = `${topic.title} · 四季旅行`;
+    })();
+  </script>
+
+
+  <!-- 科技感装饰层 -->
+  <div class="tech-corner tech-tl"></div>
+  <div class="tech-corner tech-tr"></div>
+  <div class="tech-corner tech-bl"></div>
+  <div class="tech-corner tech-br"></div>
+  <div class="tech-data-stream"></div>
+</body>
+</html>

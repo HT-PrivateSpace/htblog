@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>后台管理 · 小满即安</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+</head>
+<body data-page="admin">
+  <main class="site-main">
+    <div class="container">
+
+      <h1 class="page-title">
+        <span>⚙️</span> 后台管理
+      </h1>
+      <p class="page-subtitle">管理留言审核、音乐播放列表、相册与文章</p>
+
+      <div class="admin-layout">
+        <!-- 侧边栏 -->
+        <aside class="admin-sidebar">
+          <ul class="admin-nav">
+            <li><a href="#messages" class="active" data-section="messages">💬 留言审核</a></li>
+            <li><a href="#travel" data-section="travel">🌏 旅游管理</a></li>
+            <li><a href="#music" data-section="music">🎵 音乐管理</a></li>
+            <li><a href="#albums" data-section="albums">🖼️ 相册管理</a></li>
+            <li><a href="#articles" data-section="articles">📖 文章管理</a></li>
+            <li><a href="#settings" data-section="settings">⚙️ 站点设置</a></li>
+          </ul>
+        </aside>
+
+        <!-- 内容区 -->
+        <div class="admin-content">
+
+          <!-- 留言审核 -->
+          <section class="admin-section active" id="section-messages">
+            <h3>💬 留言审核</h3>
+            <div class="album-filter" id="msgFilter" style="margin-bottom:16px">
+              <button class="filter-btn active" data-status="pending">待审核</button>
+              <button class="filter-btn" data-status="approved">已通过</button>
+              <button class="filter-btn" data-status="rejected">已驳回</button>
+              <button class="filter-btn" data-status="all">全部</button>
+            </div>
+            <div id="adminMessages"></div>
+          </section>
+
+          <!-- 旅游管理 -->
+          <section class="admin-section" id="section-travel">
+            <h3>🌏 旅游板块管理</h3>
+            <p class="text-muted text-sm mb-md">游记 <span id="tpCount">0</span> 篇 · 地点 <span id="plcCount">0</span> 个 · 专题 <span id="topicCount">0</span> 个 · 相册 <span id="tgCount">0</span> 张 · 许愿墙 <span id="twCount">0</span> 条</p>
+
+            <!-- 子标签 -->
+            <div class="album-filter" id="travelTab" style="margin-bottom:16px">
+              <button class="filter-btn active" data-tab="posts">📖 游记管理</button>
+              <button class="filter-btn" data-tab="places">📍 地点管理</button>
+              <button class="filter-btn" data-tab="topics">🗺️ 专题管理</button>
+              <button class="filter-btn" data-tab="gallery">📸 相册管理</button>
+              <button class="filter-btn" data-tab="wishes">✨ 许愿墙</button>
+            </div>
+
+            <div id="travelAdminContent"></div>
+          </section>
+
+          <!-- 音乐管理 -->
+          <section class="admin-section" id="section-music">
+            <h3>🎵 音乐播放列表</h3>
+            <p class="text-muted text-sm mb-md">共 <span id="musicCount">0</span> 首音乐，按列表顺序播放</p>
+            <div id="adminMusic"></div>
+          </section>
+
+          <!-- 相册管理 -->
+          <section class="admin-section" id="section-albums">
+            <h3>🖼️ 相册管理</h3>
+            <p class="text-muted text-sm mb-md">共 <span id="albumCount">0</span> 个相册</p>
+            <div id="adminAlbums"></div>
+          </section>
+
+          <!-- 文章管理 -->
+          <section class="admin-section" id="section-articles">
+            <h3>📖 文章管理</h3>
+            <p class="text-muted text-sm mb-md">共 <span id="articleCount">0</span> 篇文章</p>
+            <div id="adminArticles"></div>
+          </section>
+
+          <!-- 站点设置 -->
+          <section class="admin-section" id="section-settings">
+            <h3>⚙️ 站点设置</h3>
+            <div id="adminSettings"></div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/player.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    (function renderAdmin() {
+      let msgFilter = "pending";
+
+      // 侧边栏切换
+      document.querySelectorAll(".admin-nav a").forEach(a => {
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          document.querySelectorAll(".admin-nav a").forEach(x => x.classList.remove("active"));
+          a.classList.add("active");
+          document.querySelectorAll(".admin-section").forEach(s => s.classList.remove("active"));
+          document.getElementById("section-" + a.dataset.section).classList.add("active");
+          renderAll();
+        });
+      });
+
+      // ====== 留言审核 ======
+      function renderMessages() {
+        const all = DB.getMessages();
+        const filtered = msgFilter === "all" ? all : all.filter(m => m.status === msgFilter);
+        const statusLabels = { pending: "待审核", approved: "已通过", rejected: "已驳回" };
+
+        if (!filtered.length) {
+          document.getElementById("adminMessages").innerHTML = `
+            <div class="empty-state"><div class="empty-icon">📭</div><p>暂无${statusLabels[msgFilter] || ""}留言</p></div>
+          `;
+          return;
+        }
+
+        document.getElementById("adminMessages").innerHTML = `
+          <table class="admin-table">
+            <thead><tr>
+              <th>昵称</th><th>内容</th><th>时间</th><th>状态</th><th>操作</th>
+            </tr></thead>
+            <tbody>
+              ${filtered.map(m => `
+                <tr>
+                  <td>${App.escapeHtml(m.name)}<br><span class="text-muted text-sm">${App.escapeHtml(m.email)}</span></td>
+                  <td style="max-width:280px">
+                    ${App.escapeHtml(m.content)}
+                    ${m.reply ? `<div class="message-reply" style="margin-top:6px;padding:6px 8px;font-size:12px"><strong>回复：</strong>${App.escapeHtml(m.reply)}</div>` : ""}
+                  </td>
+                  <td class="text-muted text-sm">${m.date}</td>
+                  <td><span class="status-badge status-${m.status}">${statusLabels[m.status]}</span></td>
+                  <td>
+                    ${m.status !== "approved" ? `<button class="action-btn" data-act="approve" data-id="${m.id}">通过</button>` : ""}
+                    ${m.status !== "rejected" ? `<button class="action-btn" data-act="reject" data-id="${m.id}">驳回</button>` : ""}
+                    <button class="action-btn" data-act="reply" data-id="${m.id}">回复</button>
+                    <button class="action-btn danger" data-act="delete" data-id="${m.id}">删除</button>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
+      document.getElementById("msgFilter").addEventListener("click", (e) => {
+        const btn = e.target.closest(".filter-btn");
+        if (!btn) return;
+        document.querySelectorAll("#msgFilter .filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        msgFilter = btn.dataset.status;
+        renderMessages();
+      });
+
+      document.getElementById("adminMessages").addEventListener("click", (e) => {
+        const btn = e.target.closest(".action-btn");
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const act = btn.dataset.act;
+
+        if (act === "approve") {
+          DB.updateMessageStatus(id, "approved");
+          renderMessages();
+        } else if (act === "reject") {
+          DB.updateMessageStatus(id, "rejected");
+          renderMessages();
+        } else if (act === "delete") {
+          if (confirm("确定删除这条留言？此操作不可撤销。")) {
+            DB.deleteMessage(id);
+            renderMessages();
+          }
+        } else if (act === "reply") {
+          const reply = prompt("输入回复内容：");
+          if (reply !== null && reply.trim()) {
+            DB.replyMessage(id, reply.trim());
+            DB.updateMessageStatus(id, "approved");
+            renderMessages();
+          }
+        }
+      });
+
+      // ====== 音乐管理 ======
+      function renderMusic() {
+        const music = DB.getMusic();
+        document.getElementById("musicCount").textContent = music.length;
+        document.getElementById("adminMusic").innerHTML = `
+          <div class="card mb-md">
+            <div class="card-body">
+              <h4 style="font-size:15px;margin-bottom:8px">➕ 新增音乐</h4>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
+                <input type="text" class="form-input" id="newMusicTitle" placeholder="标题 *">
+                <input type="text" class="form-input" id="newMusicAuthor" placeholder="作者 *">
+                <input type="text" class="form-input" id="newMusicCover" placeholder="封面 emoji 如 🔮">
+                <input type="text" class="form-input" id="newMusicSrc" placeholder="音频文件路径 如 assets/audio/xxx.mp3">
+                <input type="text" class="form-input" id="newMusicDuration" placeholder="时长 如 3:43">
+              </div>
+              <button class="btn btn-primary" id="addMusic" style="margin-top:8px">➕ 添加</button>
+            </div>
+          </div>
+          <table class="admin-table">
+            <thead><tr><th>#</th><th>封面</th><th>标题</th><th>作者</th><th>时长</th><th>来源</th><th>操作</th></tr></thead>
+            <tbody>
+              ${music.map((m, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td style="font-size:20px">${m.cover || "🎵"}</td>
+                  <td>${App.escapeHtml(m.title)}</td>
+                  <td>${App.escapeHtml(m.author)}</td>
+                  <td>${m.duration || "-"}</td>
+                  <td class="text-muted text-sm" style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${App.escapeHtml(m.src)}</td>
+                  <td><button class="action-btn danger" data-act="del-music" data-id="${m.id}">删除</button></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+        document.getElementById("addMusic").addEventListener("click", () => {
+          const title = document.getElementById("newMusicTitle").value.trim();
+          const author = document.getElementById("newMusicAuthor").value.trim();
+          if (!title || !author) { alert("标题和作者是必填项"); return; }
+          DB.addMusic({
+            title,
+            author,
+            cover: document.getElementById("newMusicCover").value.trim() || "🎵",
+            src: document.getElementById("newMusicSrc").value.trim(),
+            duration: document.getElementById("newMusicDuration").value.trim()
+          });
+          renderMusic();
+        });
+        document.getElementById("adminMusic").addEventListener("click", (e) => {
+          const btn = e.target.closest("[data-act='del-music']");
+          if (!btn) return;
+          if (confirm("确定删除这首音乐？")) {
+            DB.deleteMusic(btn.dataset.id);
+            renderMusic();
+          }
+        });
+      }
+
+      // ====== 相册管理 ======
+      function renderAlbums() {
+        const albums = DB.getAlbums();
+        document.getElementById("albumCount").textContent = albums.length;
+        document.getElementById("adminAlbums").innerHTML = albums.map(a => `
+          <div class="card mb-md">
+            <div class="card-body">
+              <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:12px">
+                <div>
+                  <h4 style="font-size:16px;margin-bottom:4px">${App.escapeHtml(a.title)}</h4>
+                  <p class="text-muted text-sm">${a.season} · ${a.photos.length} 张照片</p>
+                </div>
+                <span class="status-badge status-approved">公开</span>
+              </div>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      // ====== 文章管理 ======
+      function renderArticles() {
+        const articles = DB.getArticles();
+        document.getElementById("articleCount").textContent = articles.length;
+        document.getElementById("adminArticles").innerHTML = `
+          <table class="admin-table">
+            <thead><tr><th>标题</th><th>分类</th><th>日期</th><th>阅读</th><th>操作</th></tr></thead>
+            <tbody>
+              ${articles.map(a => `
+                <tr>
+                  <td>${App.escapeHtml(a.title)}</td>
+                  <td>${App.escapeHtml(a.category)}</td>
+                  <td class="text-muted text-sm">${a.date}</td>
+                  <td>${a.views}</td>
+                  <td><a href="article.html?id=${a.id}" target="_blank" class="action-btn">查看</a></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
+      // ====== 站点设置 ======
+      function renderSettings() {
+        const s = DB.getSettings();
+        document.getElementById("adminSettings").innerHTML = `
+          <div class="form-group">
+            <label class="form-label">站点名称</label>
+            <input type="text" class="form-input" id="setSiteName" value="${App.escapeHtml(s.siteName)}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">站点描述</label>
+            <input type="text" class="form-input" id="setSiteDesc" value="${App.escapeHtml(s.siteDesc)}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">作者</label>
+            <input type="text" class="form-input" id="setAuthor" value="${App.escapeHtml(s.author)}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">联系邮箱</label>
+            <input type="email" class="form-input" id="setEmail" value="${App.escapeHtml(s.email)}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">GitHub 主页</label>
+            <input type="text" class="form-input" id="setGithub" value="${App.escapeHtml((s.social && s.social.github) || '')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Twitter / X</label>
+            <input type="text" class="form-input" id="setTwitter" value="${App.escapeHtml((s.social && s.social.twitter) || '')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">留言审核</label>
+            <label style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer">
+              <input type="checkbox" id="setReview" ${s.messageReviewEnabled ? 'checked' : ''}>
+              <span>开启后新留言需要审核才展示；关闭则直接展示</span>
+            </label>
+          </div>
+          <p class="form-hint">提示：数据保存在浏览器 localStorage，仅当前浏览器可见。可点击下方按钮重置为初始演示数据。</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" id="saveSettings">💾 保存设置</button>
+            <button class="btn btn-ghost" id="resetData">↺ 重置为初始演示数据</button>
+          </div>
+        `;
+        document.getElementById("saveSettings").addEventListener("click", () => {
+          DB.updateSettings({
+            siteName: document.getElementById("setSiteName").value.trim(),
+            siteDesc: document.getElementById("setSiteDesc").value.trim(),
+            author: document.getElementById("setAuthor").value.trim(),
+            email: document.getElementById("setEmail").value.trim(),
+            social: {
+              github: document.getElementById("setGithub").value.trim(),
+              twitter: document.getElementById("setTwitter").value.trim()
+            },
+            messageReviewEnabled: document.getElementById("setReview").checked
+          });
+          alert("设置已保存");
+        });
+        document.getElementById("resetData").addEventListener("click", () => {
+          if (confirm("确定重置所有数据为初始演示数据？当前所有修改将丢失。")) {
+            DB.reset();
+            DB.resetTravel();
+            alert("数据已重置，页面将刷新。");
+            location.reload();
+          }
+        });
+      }
+
+      // ====== 旅游板块管理 ======
+      let travelTab = "posts";
+      const SEASON_LABELS = { spring: "🌸 春", summer: "🌊 夏", autumn: "🍁 秋", winter: "❄️ 冬" };
+
+      document.getElementById("travelTab").addEventListener("click", (e) => {
+        const btn = e.target.closest(".filter-btn");
+        if (!btn) return;
+        document.querySelectorAll("#travelTab .filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        travelTab = btn.dataset.tab;
+        renderTravel();
+      });
+
+      function renderTravel() {
+        // 更新计数
+        document.getElementById("tpCount").textContent = DB.getTravelPosts().length;
+        document.getElementById("plcCount").textContent = DB.getTravelPlaces().length;
+        document.getElementById("topicCount").textContent = DB.getTravelTopics().length;
+        document.getElementById("tgCount").textContent = DB.getTravelGallery().length;
+        document.getElementById("twCount").textContent = DB.getTravelWishes().length;
+
+        const box = document.getElementById("travelAdminContent");
+
+        if (travelTab === "posts") {
+          const posts = DB.getTravelPosts();
+          box.innerHTML = `
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>标题</th><th>季节</th><th>日期</th><th>阅读</th><th>操作</th></tr></thead>
+              <tbody>
+                ${posts.map(p => `
+                  <tr>
+                    <td>${p.id}</td>
+                    <td>${App.escapeHtml(p.title)}</td>
+                    <td>${SEASON_LABELS[p.season] || p.season}</td>
+                    <td class="text-muted text-sm">${p.date}</td>
+                    <td>${p.views}</td>
+                    <td><a href="travel-detail.html?id=${p.id}" target="_blank" class="action-btn">查看</a></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        } else if (travelTab === "places") {
+          const places = DB.getTravelPlaces();
+          box.innerHTML = `
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>名称</th><th>季节</th><th>位置</th><th>描述</th></tr></thead>
+              <tbody>
+                ${places.map(p => `
+                  <tr>
+                    <td>${p.id}</td>
+                    <td>${App.escapeHtml(p.name)}</td>
+                    <td>${SEASON_LABELS[p.season] || p.season}</td>
+                    <td class="text-muted text-sm">${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</td>
+                    <td>${App.escapeHtml(p.desc)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        } else if (travelTab === "topics") {
+          const topics = DB.getTravelTopics();
+          box.innerHTML = `
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>标题</th><th>季节</th><th>游记数</th><th>描述</th><th>操作</th></tr></thead>
+              <tbody>
+                ${topics.map(t => `
+                  <tr>
+                    <td>${t.id}</td>
+                    <td>${App.escapeHtml(t.title)}</td>
+                    <td>${SEASON_LABELS[t.season] || t.season}</td>
+                    <td>${t.postIds.length}</td>
+                    <td>${App.escapeHtml(t.desc)}</td>
+                    <td><a href="travel-topic.html?id=${t.id}" target="_blank" class="action-btn">查看</a></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        } else if (travelTab === "gallery") {
+          const gallery = DB.getTravelGallery();
+          box.innerHTML = `
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+              ${gallery.map(g => {
+                const post = DB.getTravelPost(g.postId);
+                return `
+                  <div class="card">
+                    <div style="aspect-ratio:4/3;background-image:url('${g.cover}');background-size:cover;background-position:center"></div>
+                    <div class="card-body" style="padding:10px">
+                      <strong style="font-size:13px">${SEASON_LABELS[g.season] || ""} ${App.escapeHtml(g.title)}</strong>
+                      <p class="text-muted text-sm" style="margin-top:4px">${post ? `📖 ${App.escapeHtml(post.title)}` : ""}</p>
+                    </div>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          `;
+        } else if (travelTab === "wishes") {
+          const wishes = DB.getTravelWishes();
+          box.innerHTML = `
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>昵称</th><th>季节</th><th>内容</th><th>时间</th></tr></thead>
+              <tbody>
+                ${wishes.map(w => `
+                  <tr>
+                    <td>${w.id}</td>
+                    <td>${App.escapeHtml(w.name)}</td>
+                    <td>${SEASON_LABELS[w.season] || w.season}</td>
+                    <td style="max-width:300px">${App.escapeHtml(w.content)}</td>
+                    <td class="text-muted text-sm">${w.date}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        }
+      }
+
+      function renderAll() {
+        renderMessages();
+        renderMusic();
+        renderAlbums();
+        renderArticles();
+        renderSettings();
+        renderTravel();
+      }
+
+      renderAll();
+    })();
+  </script>
+
+
+  <!-- 科技感装饰层 -->
+  <div class="tech-corner tech-tl"></div>
+  <div class="tech-corner tech-tr"></div>
+  <div class="tech-corner tech-bl"></div>
+  <div class="tech-corner tech-br"></div>
+  <div class="tech-data-stream"></div>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>留言板 · 小满即安</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+</head>
+<body data-page="message">
+  <main class="site-main">
+    <div class="container">
+
+      <h1 class="page-title">
+        <span role="img" aria-label="对话">💬</span> 留言板
+      </h1>
+      <p class="page-subtitle">写下你想说的话，无论是感想、提问还是分享一段心情</p>
+
+      <div class="message-layout">
+
+        <!-- 留言表单 — REQ-008: 情绪化设计 -->
+        <div class="message-form-card">
+          <h3><span role="img" aria-label="铅笔">✏️</span> 写下你的留言</h3>
+          <!-- REQ-008: 情绪引导语 -->
+          <p class="text-muted text-sm" style="margin-bottom:16px;font-style:italic">写下此刻的心情，或者只是打一个句号。这里很安全。</p>
+          
+          <form id="messageForm" novalidate>
+            <div class="form-group">
+              <label class="form-label">昵称 <span class="required">*</span></label>
+              <input type="text" class="form-input" id="msgName" maxlength="20" placeholder="你怎么称呼自己？">
+              <div class="form-error" id="errName">请填写昵称</div>
+            </div>
+            
+            <!-- REQ-008: 心情标签选择器 -->
+            <div class="form-group">
+              <label class="form-label">此刻心情 <span class="text-muted text-sm">（可选）</span></label>
+              <div class="mood-picker" id="moodPicker">
+                <button type="button" class="mood-option" data-mood="happy"><span role="img" aria-label="开心">😊</span> 开心</button>
+                <button type="button" class="mood-option" data-mood="calm"><span role="img" aria-label="平静">🌿</span> 平静</button>
+                <button type="button" class="mood-option" data-mood="tired"><span role="img" aria-label="有点累">😮‍💨</span> 有点累</button>
+                <button type="button" class="mood-option" data-mood="need"><span role="img" aria-label="需要鼓励">💛</span> 需要鼓励</button>
+              </div>
+              <input type="hidden" id="msgMood" value="">
+            </div>
+
+            <!-- REQ-008: 匿名提交复选框，默认勾选 -->
+            <div class="form-group">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="msgAnonymous" checked style="width:16px;height:16px">
+                <span style="font-size:13px;color:var(--text-secondary)">匿名提交（降低表达门槛，更自由）</span>
+              </label>
+            </div>
+
+            <div class="form-group" id="emailGroup" style="display:none">
+              <label class="form-label">邮箱 <span class="required">*</span> <span class="text-muted text-sm">（不公开）</span></label>
+              <input type="email" class="form-input" id="msgEmail" placeholder="用于通知你审核结果">
+              <div class="form-error" id="errEmail">请填写正确的邮箱</div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">网址 <span class="text-muted text-sm">（可选）</span></label>
+              <input type="url" class="form-input" id="msgWebsite" placeholder="https://">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">内容 <span class="required">*</span></label>
+              <textarea class="form-textarea" id="msgContent" maxlength="500" placeholder="说点什么吧……（最多 500 字，支持表情）"></textarea>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+                <button type="button" class="btn btn-sm btn-ghost" id="emojiToggle" aria-label="表情选择"><span role="img" aria-label="笑脸">😊</span> 表情</button>
+                <span class="form-hint"><span id="charCount">0</span>/500</span>
+              </div>
+              <div class="emoji-picker" id="emojiPicker"></div>
+              <div class="form-error" id="errContent">请填写留言内容</div>
+            </div>
+            <button type="submit" class="btn btn-lg" style="width:100%">把心情轻轻地放下 ✨</button>
+            <p class="form-hint mt-md" style="text-align:center">提交后将进入审核队列，审核通过后才会公开展示</p>
+          </form>
+        </div>
+
+        <!-- 留言列表 -->
+        <div>
+          <h3 style="font-size:18px;margin-bottom:16px;color:var(--text-primary)"><span role="img" aria-label="信封">💌</span> 已审核的留言</h3>
+          <div id="messageList"></div>
+          <div id="pagination"></div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/player.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    (function renderMessage() {
+      const EMOJIS = ["😊","🙏","🌸","🌊","🍂","❄️","👍","❤️","🌹","🍵","📚","🎵","✨","🤝","😢","😄","🌿","🍁","⛄","☕"];
+      let currentPage = 1;
+      const PER_PAGE = 5;
+      let selectedMood = "";
+
+      // REQ-008: 匿名切换
+      const anonCheck = document.getElementById("msgAnonymous");
+      const emailGroup = document.getElementById("emailGroup");
+      if (anonCheck) {
+        anonCheck.addEventListener("change", () => {
+          emailGroup.style.display = anonCheck.checked ? "none" : "block";
+        });
+      }
+
+      // REQ-008: 心情标签选择
+      document.querySelectorAll(".mood-option").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".mood-option").forEach(b => b.classList.remove("active"));
+          if (btn.classList.contains("active")) {
+            btn.classList.remove("active");
+            selectedMood = "";
+          } else {
+            btn.classList.add("active");
+            selectedMood = btn.dataset.mood;
+          }
+          document.getElementById("msgMood").value = selectedMood;
+        });
+      });
+
+      // 初始化表情选择器
+      document.getElementById("emojiPicker").innerHTML = EMOJIS.map(e =>
+        `<button type="button" class="emoji-btn" data-emoji="${e}" aria-label="${e}">${e}</button>`
+      ).join("");
+
+      document.getElementById("emojiToggle").addEventListener("click", () => {
+        document.getElementById("emojiPicker").classList.toggle("open");
+      });
+
+      document.getElementById("emojiPicker").addEventListener("click", (e) => {
+        const btn = e.target.closest(".emoji-btn");
+        if (!btn) return;
+        const ta = document.getElementById("msgContent");
+        const pos = ta.selectionStart;
+        ta.value = ta.value.slice(0, pos) + btn.dataset.emoji + ta.value.slice(pos);
+        ta.focus();
+        ta.selectionStart = ta.selectionEnd = pos + btn.dataset.emoji.length;
+        updateCharCount();
+      });
+
+      // 字数统计
+      const contentTa = document.getElementById("msgContent");
+      function updateCharCount() {
+        document.getElementById("charCount").textContent = contentTa.value.length;
+      }
+      contentTa.addEventListener("input", updateCharCount);
+
+      // REQ-008: 心情标签映射
+      const moodLabels = {
+        happy: "😊 开心",
+        calm: "🌿 平静",
+        tired: "😮‍💨 有点累",
+        need: "💛 需要鼓励"
+      };
+
+      // 表单提交
+      document.getElementById("messageForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        let ok = true;
+        const name = document.getElementById("msgName").value.trim();
+        const isAnonymous = document.getElementById("msgAnonymous").checked;
+        const email = isAnonymous ? "anonymous@local" : document.getElementById("msgEmail").value.trim();
+        const content = document.getElementById("msgContent").value.trim();
+
+        document.getElementById("errName").classList.toggle("show", !name);
+        document.getElementById("errEmail").classList.toggle("show", !isAnonymous && !App.isEmail(email));
+        document.getElementById("errContent").classList.toggle("show", !content);
+        if (!name) ok = false;
+        if (!isAnonymous && !App.isEmail(email)) ok = false;
+        if (!content) ok = false;
+        if (!ok) return;
+
+        // 防止 HTML 注入
+        const safeContent = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        
+        DB.addMessage({
+          name: isAnonymous ? "匿名的朋友" : name,
+          email: email,
+          website: document.getElementById("msgWebsite").value.trim(),
+          content: safeContent,
+          mood: selectedMood
+        });
+
+        // REQ-008: 随机温暖回复
+        const reply = App.warmReplies[Math.floor(Math.random() * App.warmReplies.length)];
+        const form = document.getElementById("messageForm");
+        form.insertAdjacentHTML("beforebegin", `
+          <div class="alert alert-success" id="successAlert">
+            <span role="img" aria-label="星星">✨</span> ${reply}
+          </div>
+        `);
+        form.reset();
+        updateCharCount();
+        document.querySelectorAll(".mood-option").forEach(b => b.classList.remove("active"));
+        selectedMood = "";
+        document.getElementById("msgMood").value = "";
+        anonCheck.checked = true;
+        emailGroup.style.display = "none";
+        setTimeout(() => {
+          const a = document.getElementById("successAlert");
+          if (a) a.remove();
+        }, 6000);
+      });
+
+      // 渲染留言列表
+      function render() {
+        const approved = DB.getMessages("approved");
+        const page = App.paginate(approved, currentPage, PER_PAGE);
+
+        if (!page.items.length) {
+          document.getElementById("messageList").innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon" role="img" aria-label="空">📭</div>
+              <h3>还没有留言</h3>
+              <p>成为第一个留下心情的人吧</p>
+            </div>
+          `;
+          document.getElementById("pagination").innerHTML = "";
+          return;
+        }
+
+        document.getElementById("messageList").innerHTML = page.items.map(m => {
+          const initial = (m.name || "?").charAt(0).toUpperCase();
+          const websiteHTML = m.website ? `<a href="${App.escapeHtml(m.website)}" target="_blank" class="message-name">${App.escapeHtml(m.name)}</a>` : `<span class="message-name">${App.escapeHtml(m.name)}</span>`;
+          const replyHTML = m.reply ? `<div class="message-reply"><strong>作者回复：</strong>${App.escapeHtml(m.reply)}</div>` : "";
+          const moodHTML = m.mood && moodLabels[m.mood] ? `<span class="tag" style="font-size:11px">${moodLabels[m.mood]}</span>` : "";
+          return `
+            <div class="message-item">
+              <div class="message-header">
+                <div class="message-author">
+                  <div class="message-avatar">${initial}</div>
+                  ${websiteHTML}
+                  ${moodHTML}
+                </div>
+                <span class="message-time">${m.date}</span>
+              </div>
+              <div class="message-content">${m.content}</div>
+              ${replyHTML}
+            </div>
+          `;
+        }).join("");
+
+        document.getElementById("pagination").innerHTML = App.renderPagination(page.pages, page.page, (p) => {
+          currentPage = p;
+          render();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      }
+
+      render();
+    })();
+  </script>
+
+
+  <!-- 科技感装饰层 -->
+  <div class="tech-corner tech-tl" aria-hidden="true"></div>
+  <div class="tech-corner tech-tr" aria-hidden="true"></div>
+  <div class="tech-corner tech-bl" aria-hidden="true"></div>
+  <div class="tech-corner tech-br" aria-hidden="true"></div>
+  <div class="tech-data-stream" aria-hidden="true"></div>
+</body>
+</html>

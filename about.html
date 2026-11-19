@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>关于 · 小满即安</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+</head>
+<body data-page="about">
+  <main class="site-main">
+    <div class="container" style="max-width:820px">
+
+      <h1 class="page-title">
+        <span role="img" aria-label="挥手">👋</span> 关于
+      </h1>
+      <p class="page-subtitle">关于这个博客，以及写字的人</p>
+
+      <!-- Hero -->
+      <div class="about-hero">
+        <div class="about-avatar">H</div>
+        <h2 style="font-size:24px;margin-bottom:8px">HT</h2>
+        <p class="text-muted">写四季的人 · 住在江南的小城</p>
+      </div>
+
+      <!-- 自我介绍 — REQ-002: 对话感文案 -->
+      <div class="about-content">
+        <p>嗨，你来了。这里是我的小角落，也是你的。</p>
+        <p>这个网站叫"小满即安"，因为我相信——小满是节气里最温柔的一个，也是生活最理想的状态：不多不少，刚刚好，然后安静地享受当下。春天看山，夏天看海，秋天看林，冬天看雪，每一季都有它独特的风景。</p>
+        <p>我在这里记录那些微小而温柔的事：一场雨、一杯茶、一本读到一半的书、一段走得慢的路。希望这些文字，能给你一点点安静的力量。</p>
+        <h3 style="margin:24px 0 12px;font-size:18px;color:var(--text-primary)">关于这个小角落</h3>
+        <p>这个站点是我 2026 年搭建的个人旅行与生活空间，用最朴素的方式，记录最真诚的心情。最大的特色是四季主题一键切换——春夏秋冬，总有一季适合你此刻的心情。</p>
+        <ul style="margin:12px 0 12px 24px;line-height:2">
+          <li><span role="img" aria-label="樱花">🌸</span> 四季主题：一键切换氛围，浏览器会记住你的偏好</li>
+          <li><span role="img" aria-label="音乐">🎵</span> 音乐播放器：底部固定，让阅读有伴</li>
+          <li><span role="img" aria-label="相册">🖼️</span> 时光相册：按季节归档，那些被温柔捕捉的瞬间</li>
+          <li><span role="img" aria-label="对话">💬</span> 留言板：欢迎写下你的故事，我会认真看</li>
+        </ul>
+        <h3 style="margin:24px 0 12px;font-size:18px;color:var(--text-primary)">联系我</h3>
+        <p>如果你也想分享一段四季的故事，或者只是想打个招呼，下面是我的联系方式。<strong>愿你被这个世界温柔以待。</strong></p>
+        <p style="margin-top:12px;color:var(--text-muted);font-style:italic">— HT，于 2026 年某个清晨</p>
+      </div>
+
+      <!-- 联系方式 -->
+      <h2 class="section-title">
+        <span class="title-icon" role="img" aria-label="信封">📮</span>
+        联系方式
+      </h2>
+      <div class="contact-list">
+        <div class="contact-card">
+          <div class="contact-icon" role="img" aria-label="邮箱">✉️</div>
+          <div class="contact-info">
+            <strong>邮箱</strong>
+            <span>linxi@example.com</span>
+          </div>
+        </div>
+        <div class="contact-card" onclick="location.href='message.html'" style="cursor:pointer">
+          <div class="contact-icon" role="img" aria-label="对话">💬</div>
+          <div class="contact-info">
+            <strong>留言板</strong>
+            <span>直接留言给我</span>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon" role="img" aria-label="代码">🐙</div>
+          <div class="contact-info">
+            <strong>GitHub</strong>
+            <span>github.com/linxi</span>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon" role="img" aria-label="鸟">🐦</div>
+          <div class="contact-info">
+            <strong>Twitter</strong>
+            <span>@linxi</span>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon" role="img" aria-label="信号">📡</div>
+          <div class="contact-info">
+            <strong>RSS 订阅</strong>
+            <span>第一时间收到新文章</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/player.js"></script>
+  <script src="assets/js/app.js"></script>
+
+
+  <!-- 科技感装饰层 -->
+  <div class="tech-corner tech-tl" aria-hidden="true"></div>
+  <div class="tech-corner tech-tr" aria-hidden="true"></div>
+  <div class="tech-corner tech-bl" aria-hidden="true"></div>
+  <div class="tech-corner tech-br" aria-hidden="true"></div>
+  <div class="tech-data-stream" aria-hidden="true"></div>
+</body>
+</html>

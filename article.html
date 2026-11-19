@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文章详情 · 小满即安</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+</head>
+<body data-page="article">
+  <main class="site-main">
+    <div class="container" style="max-width:820px">
+
+      <div id="articleDetail">
+        <div class="skeleton" style="height:320px;margin-bottom:20px"></div>
+        <div class="skeleton" style="height:32px;width:60%;margin-bottom:16px"></div>
+        <div class="skeleton" style="height:14px;margin-bottom:8px"></div>
+        <div class="skeleton" style="height:14px;margin-bottom:8px"></div>
+        <div class="skeleton" style="height:14px;width:80%"></div>
+      </div>
+
+      <!-- 相关推荐 -->
+      <div id="relatedSection" style="display:none">
+        <h2 class="section-title">
+          <span class="title-icon">🔗</span>
+          相关推荐
+        </h2>
+        <div class="related-articles" id="relatedArticles"></div>
+      </div>
+
+      <!-- 评论入口 -->
+      <div class="card mt-lg" id="commentEntry">
+        <div class="card-body" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:space-between">
+          <div>
+            <h3 style="font-size:16px;margin-bottom:4px">💬 想说点什么？</h3>
+            <p class="text-muted text-sm">留言板已经为你打开，欢迎写下你的故事或感想。</p>
+          </div>
+          <a href="message.html" class="btn">前往留言板</a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/player.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    (function renderArticle() {
+      const id = App.getParam("id");
+      const article = id ? DB.getArticle(id) : DB.getArticles()[0];
+
+      if (!article) {
+        document.getElementById("articleDetail").innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <h3>文章不存在</h3>
+            <p>可能已被删除或链接错误</p>
+            <a href="index.html" class="btn mt-md">返回首页</a>
+          </div>
+        `;
+        document.getElementById("relatedSection").style.display = "none";
+        document.getElementById("commentEntry").style.display = "none";
+        return;
+      }
+
+      document.title = `${article.title} · 小满即安`;
+
+      document.getElementById("articleDetail").innerHTML = `
+        <article class="article-detail">
+          <h1>${App.escapeHtml(article.title)}</h1>
+          <div class="article-meta mb-md" style="margin-bottom:20px">
+            <span class="meta-item">✍ ${App.escapeHtml(article.author)}</span>
+            <span class="meta-item">📅 ${article.date}</span>
+            <span class="meta-item">📁 ${App.escapeHtml(article.category)}</span>
+            <span class="meta-item">👁 ${App.formatViews(article.views)} 阅读</span>
+          </div>
+          <div class="article-cover" style="background-image:url('${article.cover}')"></div>
+          <div class="article-body">${article.content}</div>
+          <div class="mt-lg" style="padding-top:16px;border-top:1px solid var(--border)">
+            ${article.tags.map(t => `<span class="tag">${App.escapeHtml(t)}</span>`).join("")}
+          </div>
+        </article>
+      `;
+
+      // 相关推荐：同分类的其他文章，最多3篇
+      const related = DB.getArticles()
+        .filter(a => a.id !== article.id && (a.category === article.category || a.tags.some(t => article.tags.includes(t))))
+        .slice(0, 3);
+
+      if (related.length) {
+        document.getElementById("relatedSection").style.display = "block";
+        document.getElementById("relatedArticles").innerHTML = related.map(a => `
+          <div class="related-card" onclick="location.href='article.html?id=${a.id}'">
+            <h4>${App.escapeHtml(a.title)}</h4>
+            <div class="related-meta">${a.date} · ${App.formatViews(a.views)} 阅读</div>
+          </div>
+        `).join("");
+      }
+    })();
+  </script>
+
+
+  <!-- 科技感装饰层 -->
+  <div class="tech-corner tech-tl"></div>
+  <div class="tech-corner tech-tr"></div>
+  <div class="tech-corner tech-bl"></div>
+  <div class="tech-corner tech-br"></div>
+  <div class="tech-data-stream"></div>
+</body>
+</html>

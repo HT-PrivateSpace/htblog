@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>季节相册墙 · 四季旅行</title>
+  <!-- REQ-010: 内联初始主题变量防止闪烁 -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem("blog_theme") || "spring";
+      var dark = localStorage.getItem("blog_dark") === "true";
+      document.documentElement.setAttribute("data-theme", saved);
+      if (dark) document.documentElement.setAttribute("data-dark", "true");
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/tech.css">
+</head>
+<body data-page="travel">
+  <main class="site-main">
+    <div class="container">
+
+      <h1 class="page-title"><span>📸</span> 季节相册墙</h1>
+      <p class="page-subtitle">按季节浏览旅行中的精彩瞬间，点击可进入对应游记</p>
+
+      <!-- 季节筛选 -->
+      <div class="album-filter" id="seasonFilter">
+        <button class="filter-btn active" data-season="all">全部</button>
+        <button class="filter-btn" data-season="spring">🌸 春天</button>
+        <button class="filter-btn" data-season="summer">🌊 夏天</button>
+        <button class="filter-btn" data-season="autumn">🍁 秋天</button>
+        <button class="filter-btn" data-season="winter">❄️ 冬天</button>
+      </div>
+
+      <!-- 相册网格 -->
+      <div class="gallery-grid" id="galleryGrid"></div>
+
+    </div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/player.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    (function renderGallery() {
+      let currentSeason = "all";
+      const SEASON_ICONS = { spring: "🌸", summer: "🌊", autumn: "🍁", winter: "❄️" };
+
+      function render() {
+        const photos = currentSeason === "all" ? DB.getTravelGallery() : DB.getTravelGallery(currentSeason);
+        document.getElementById("galleryGrid").innerHTML = photos.map(p => {
+          const post = DB.getTravelPost(p.postId);
+          return `
+            <div class="gallery-photo" onclick="${post ? `location.href='travel-detail.html?id=${p.postId}'` : ""}">
+              <div class="photo-cover" style="background-image:url('${p.cover}')"></div>
+              <div class="photo-overlay">
+                <strong>${SEASON_ICONS[p.season]} ${App.escapeHtml(p.title)}</strong>
+                ${post ? `<span style="opacity:0.8">📖 ${App.escapeHtml(post.title)}</span>` : ""}
+              </div>
+            </div>
+          `;
+        }).join("") || `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📷</div><p>这个季节还没有照片</p></div>`;
+      }
+
+      document.getElementById("seasonFilter").addEventListener("click", (e) => {
+        const btn = e.target.closest(".filter-btn");
+        if (!btn) return;
+        document.querySelectorAll("#seasonFilter .filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentSeason = btn.dataset.season;
+        render();
+      });
+
+      render();
+    })();
+  </script>
+
+
+  <!-- 科技感装饰层 -->
+  <div class="tech-corner tech-tl"></div>
+  <div class="tech-corner tech-tr"></div>
+  <div class="tech-corner tech-bl"></div>
+  <div class="tech-corner tech-br"></div>
+  <div class="tech-data-stream"></div>
+</body>
+</html>
